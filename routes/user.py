@@ -1,9 +1,11 @@
+from datetime import datetime, timedelta
 from fastapi import APIRouter
-from fastapi import status
+from fastapi import status, HTTPException ,Depends
 from config.db import conn
+from core import security
 from schemas.user import userEntity, usersentity
 from models.user import User
-from passlib.hash import sha256_crypt
+from fastapi.security import OAuth2PasswordRequestForm
 from bson import ObjectId
 
 
@@ -26,7 +28,7 @@ def find_all_users():
     )
 def create_user(user: User):
     new_user = dict(user)
-    new_user["password"] = sha256_crypt.encrypt(new_user["password"])
+    new_user["password"] = security.get_password_hash(new_user["password"])
     del new_user["id"]
 
     id = conn.local.user.insert_one(new_user).inserted_id
@@ -40,11 +42,24 @@ def create_user(user: User):
     summary= 'login an user',
     tags= ['Users']
     )
-def login():
+def login(        
+        form_data:OAuth2PasswordRequestForm = Depends()
+        ):
     """
     OAuth2 compatible token login, get an access token for future requests
     """
-    pass
+    user = security.authenticate(
+        username=form_data.username, password=form_data.password
+        )
+    if not user:
+        raise HTTPException(status_code=400, detail="Incorrect username")
+    access_token_expires = timedelta(minutes=security.ACCESS_TOKEN_EXPIRE_MINUTES)
+    return {
+        "access_token": security.create_access_token(
+        user.id, expires_delta=access_token_expires
+        ),
+        "token_type": "bearer",
+        }
 
 @user.get(
     path= '/users/{id}',
