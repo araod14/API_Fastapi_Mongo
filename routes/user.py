@@ -13,12 +13,22 @@ user=APIRouter()
 
 @user.get(
     path= '/users',
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_200_OK,
     summary= 'Get all user',
     tags= ['Users']    
     )
 def find_all_users():
-    return usersentity(conn.local.user.find())
+    return usersentity(conn.user.find())
+
+@user.get(
+    path= '/users/username',
+    status_code=status.HTTP_200_OK,
+    summary= 'Get a user by username',
+    tags= ['Users']    
+    )
+def find_a_users_by_username(username: str):
+    user = conn.user.find_one({"username":username})
+    return userEntity(user)
 
 @user.post(
     path= '/signup',
@@ -31,8 +41,8 @@ def create_user(user: User):
     new_user["password"] = security.get_password_hash(new_user["password"])
     del new_user["id"]
 
-    id = conn.local.user.insert_one(new_user).inserted_id
-    user = conn.local.user.find_one({"_id": id})
+    id = conn.user.insert_one(new_user).inserted_id
+    user = conn.user.find_one({"_id": id})
     return userEntity(user)
 
 ###Login a user
@@ -56,7 +66,7 @@ def login(
     access_token_expires = timedelta(minutes=security.ACCESS_TOKEN_EXPIRE_MINUTES)
     return {
         "access_token": security.create_access_token(
-        user.id, expires_delta=access_token_expires
+        user["id"], expires_delta=access_token_expires
         ),
         "token_type": "bearer",
         }
@@ -68,7 +78,7 @@ def login(
     tags= ['Users']    
     )
 def find_user(id: str):
-    return userEntity(conn.local.user.find_one({"_id": ObjectId(id)}))
+    return userEntity(conn.user.find_one({"_id": ObjectId(id)}))
 
 @user.put(
     path= '/users/{id}',
@@ -78,7 +88,7 @@ def find_user(id: str):
     )
 def update_user(id: str, user: User):
     conn.local.user.find_one_and_replace({"_id": ObjectId(id)}, {"$set": dict(user)})
-    return userEntity(conn.local.user.find_one({"_id": ObjectId(id)}))
+    return userEntity(conn.user.find_one({"_id": ObjectId(id)}))
 
 @user.delete(
     path= '/users/{id}',
@@ -87,5 +97,5 @@ def update_user(id: str, user: User):
     tags= ['Users']
     )
 def delete_user(id: str):
-    userEntity(conn.local.user.find_one_and_delete({"_id":ObjectId(id)}))
+    userEntity(conn.user.find_one_and_delete({"_id":ObjectId(id)}))
     return 'Deleted'

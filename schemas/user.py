@@ -1,11 +1,11 @@
-def userEntity(item):
+def userEntity(user):
     return {
-        "id": str(item["_id"]),
-        "username": item["username"],
-        "name": item["name"],
-        "email": item["email"],
-        "password": item["password"]
+        "id": str(user["_id"]),
+        "username": user["username"],
+        "name": user["name"],
+        "email": user["email"],
+        "password": user["password"]
     }
 
-def usersentity(entity):
-    return [userEntity(item) for item in entity]
+def usersentity(users):
+    return [userEntity(user) for user in users]

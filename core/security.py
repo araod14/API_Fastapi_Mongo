@@ -1,4 +1,4 @@
-from schemas.user import userEntity, usersentity
+from schemas.user import userEntity
 from config.db import conn
 from datetime import datetime, timedelta
 from fastapi.security import OAuth2PasswordBearer
@@ -6,7 +6,7 @@ from fastapi import HTTPException, Depends
 from typing import Any, Union
 from jose import jwt
 from passlib.context import CryptContext
-from bson import ObjectId
+
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -38,14 +38,15 @@ def get_password_hash(password: str):
     return pwd_context.hash(password)
 
 def get_user_by_username(username: str): 
-    return userEntity(conn.local.user.find_one({"username": ObjectId(username)}))
+    user = conn.user.find_one({"username":username})
+    return userEntity(user)
 
 def authenticate(*, username: str, password: str):
     user = get_user_by_username(username=username)
     if not user:
         return None
-    #password_db = db.query(Users).filter(Users.password==password)
-    if not verify_password(password, user.password):
+  
+    if not verify_password(password, user["password"]):
         raise HTTPException(status_code=400, detail="wrong password")
     return user
 
